@@ -48,10 +48,13 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data && data.url) {
+                        if (data && Array.isArray(data) && data[0].url) {
+                            const imageUrl = data[0].url;
+
                             document.getElementById('screenshotResult').innerHTML =
-                                `图片分享链接：<a href="${data.url}" target="_blank">点击查看</a>`;
-                            navigator.clipboard.writeText(data.url).then(() => {
+                                `图片分享链接：<a href="${imageUrl}" target="_blank">点击查看</a>`;
+
+                            navigator.clipboard.writeText(imageUrl).then(() => {
                                 showToast('图片分享链接已复制到剪切板');
                             }, err => {
                                 showToast('复制到剪切板失败');
