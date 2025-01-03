@@ -41,14 +41,18 @@
                 canvas.toBlob(blob => {
                     const formData = new FormData();
                     formData.append('file', blob, 'mjj.webp');
+                    //  formData.append('strategy_id', '15');
 
-                    fetch('https://skyimg.de/upload', {
+                    fetch('https://image.dooo.ng/api/v1/upload', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data && data.url) {
+                        if (data && data.data && data.data.links && data.data.links.url) {
                             document.getElementById('screenshotResult').innerHTML =
                                 `图片分享链接：<a href="${data.data.links.url}" target="_blank">点击查看</a>`;
                             navigator.clipboard.writeText(data.data.links.url).then(() => {
