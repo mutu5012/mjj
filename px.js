@@ -42,7 +42,7 @@
                     const formData = new FormData();
                     formData.append('file', blob, 'mjj.webp');
 
-                    fetch('https://skyimg.de/upload', {
+                    fetch('https://skyimg.de/api/upload', {
                         method: 'POST',
                         body: formData
                     })
