@@ -1,31 +1,3 @@
-function showToast(message) {
-    const toastContainer = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = 'alert alert-primary fade show';
-    toast.role = 'alert';
-    toast.style.marginBottom = '5px';
-    toast.innerHTML = message;
-
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toastContainer.removeChild(toast);
-    }, 6000);
-}
-
-function cloneWithInlineStyles(element) {
-    const clone = element.cloneNode(false);
-    const computedStyle = window.getComputedStyle(element);
-    for (let property of computedStyle) {
-        clone.style.setProperty(property, computedStyle.getPropertyValue(property), computedStyle.getPropertyPriority(property));
-    }
-    clone.style.transform = 'none';
-    for (let child of element.children) {
-        clone.appendChild(cloneWithInlineStyles(child));
-    }
-    return clone;
-}
-
 function takeScreenshot() {
     const targetElement = document.querySelector('.container');
     const uploadButton = document.querySelector('button[onclick="takeScreenshot()"]');
@@ -34,28 +6,24 @@ function takeScreenshot() {
 
     loadingDiv.style.display = 'none';
     screenshotResult.style.display = 'none';
-
-    const clonedElement = cloneWithInlineStyles(targetElement);
-    const offScreenDiv = document.createElement('div');
-    offScreenDiv.style.position = 'absolute';
-    offScreenDiv.style.left = '-9999px';
-    offScreenDiv.style.top = '0';
-    offScreenDiv.appendChild(clonedElement);
-    document.body.appendChild(offScreenDiv);
-
-    html2canvas(clonedElement, {
-        scale: window.devicePixelRatio,
+    
+    prepareForScreenshot();
+    
+    const options = {
+        scale: 2,
         useCORS: true,
-        allowTaint: false,
-        backgroundColor: null,
-        scrollX: -window.scrollX,
-        scrollY: -window.scrollY,
-        ignoreElements: function(element) {
-            return false;
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        onclone: function(clonedDoc) {
+            const clonedElement = clonedDoc.querySelector('.container');
+            if (clonedElement) {
+                cleanupClonedElement(clonedElement);
+            }
         }
-    }).then(canvas => {
-        document.body.removeChild(offScreenDiv);
+    };
 
+    html2canvas(targetElement, options).then(canvas => {
         loadingDiv.style.display = 'block';
         screenshotResult.style.display = 'block';
 
@@ -83,128 +51,104 @@ function takeScreenshot() {
                 } else {
                     document.getElementById('screenshotResult').textContent = '上传成功但未获取到 URL！';
                 }
-                uploadButton.style.visibility = 'visible';
                 loadingDiv.style.display = 'none';
+                uploadButton.style.visibility = 'visible';
+                
+                restoreAfterScreenshot();
             })
             .catch(error => {
                 document.getElementById('screenshotResult').textContent = '上传失败！';
                 console.error('Error:', error);
                 loadingDiv.style.display = 'none';
+                restoreAfterScreenshot();
             });
         });
     }).catch(error => {
-        console.error('html2canvas error:', error);
-        document.body.removeChild(offScreenDiv);
-        showToast('截图失败，请重试！');
+        console.error('Screenshot error:', error);
+        loadingDiv.style.display = 'none';
+        restoreAfterScreenshot();
     });
 }
 
-async function fetchExchangeRates() {
-    try {
-        const response = await fetch('exchange_rates.json');
-        const data = await response.json();
-        const rates = data.rates;
-        const date = data.date;
-
-        document.getElementById('dataDate').value = date;
-
-        updateExchangeRate(document.getElementById('purchaseCurrency'), rates, 'exchangeRate');
-        updateExchangeRate(document.getElementById('tradeCurrency'), rates, 'tradeExchangeRate');
-        
-        document.getElementById('purchaseCurrency').addEventListener('change', function() {
-            updateExchangeRate(this, rates, 'exchangeRate');
-        });
-        document.getElementById('tradeCurrency').addEventListener('change', function() {
-            updateExchangeRate(this, rates, 'tradeExchangeRate');
-        });
-
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-        const day = now.getDate();
-        const currentDateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        document.getElementById("currentDate").value = currentDateStr;
-
-    } catch (error) {
-        console.error('Error fetching exchange rates:', error);
-    }
-}
-
-function updateExchangeRate(currencyElement, rates, rateInputId) {
-    const currency = currencyElement.value;
-    const rate = currency === 'CNY' ? 1 : rates[currency];
-    document.getElementById(rateInputId).value = rate;
-}
-
-function calculateRemainingValue() {
-    const purchaseCurrency = document.getElementById("purchaseCurrency").value;
-    const tradeCurrency = document.getElementById("tradeCurrency").value;
-    const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
-    const tradeExchangeRate = parseFloat(document.getElementById("tradeExchangeRate").value);
-    const purchasePrice = parseFloat(document.getElementById("purchasePrice").value);
-    const tradePrice = parseFloat(document.getElementById("tradePrice").value);
-    const currentDate = new Date(document.getElementById("currentDate").value);
-    const expiryDate = new Date(document.getElementById("expiryDate").value);
-    const paymentFrequency = document.getElementById("paymentFrequency").value;
-
-    const remainingDays = Math.floor((expiryDate - currentDate) / (24 * 60 * 60 * 1000));
-    const purchasePriceCNY = purchasePrice * exchangeRate;
-    const tradePriceCNY = tradePrice * tradeExchangeRate;
-    const remainingValue = calculateValueByFrequency(paymentFrequency, purchasePriceCNY, remainingDays);
-    const premium = tradePriceCNY - remainingValue;
-    const premiumPercent = ((premium / remainingValue) * 100).toFixed(2);
+function prepareForScreenshot() {
+    window._screenshotState = {
+        modifiedElements: []
+    };
     
-    displayResults(purchasePriceCNY, tradePriceCNY, remainingValue, premium, premiumPercent, remainingDays);
+    const problematicSelectors = [
+        '[class*="immersive"]', 
+        '[class*="translation"]', 
+        '[id*="immersive"]', 
+        '[id*="translation"]',
+        '.darkreader',
+        '[id*="darkreader"]',
+        '[class*="extension"]',
+        '[id*="extension"]',
+        'iframe'
+    ];
+    
+    problematicSelectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+            const originalDisplay = el.style.display;
+            window._screenshotState.modifiedElements.push({
+                element: el,
+                property: 'display',
+                value: originalDisplay
+            });
+            el.style.display = 'none';
+        });
+    });
+    
+    const elementsWithStyles = document.querySelectorAll('.container *');
+    elementsWithStyles.forEach(el => {
+        const stylesToFix = ['transform', 'perspective', 'filter', 'backdrop-filter'];
+        
+        stylesToFix.forEach(prop => {
+            const computedStyle = window.getComputedStyle(el);
+            const propValue = computedStyle.getPropertyValue(prop);
+            
+            if (propValue && propValue !== 'none') {
+                window._screenshotState.modifiedElements.push({
+                    element: el,
+                    property: prop,
+                    value: el.style[prop]
+                });
+                el.style[prop] = 'none';
+            }
+        });
+    });
 }
 
-function calculateValueByFrequency(paymentFrequency, price, days) {
-    let daysInPeriod;
-    switch(paymentFrequency) {
-        case 'yearly': daysInPeriod = 365; break;
-        case 'halfyearly': daysInPeriod = 182.5; break;
-        case 'quarterly': daysInPeriod = 91.25; break;
-        case 'monthly': daysInPeriod = 30.44; break;
-        case 'two-yearly': daysInPeriod = 730; break;
-        case 'three-yearly': daysInPeriod = 1095; break;
-        case 'five-yearly': daysInPeriod = 1825; break;
-        default: daysInPeriod = 365;
+function cleanupClonedElement(element) {
+    element.querySelectorAll('*').forEach(el => {
+        const stylesToReset = [
+            'transform', 'perspective', 'filter', 
+            'backdrop-filter', 'transition', 'animation'
+        ];
+        
+        stylesToReset.forEach(style => {
+            if (el.style[style]) {
+                el.style[style] = 'none';
+            }
+        });
+        
+        for (let i = 0; i < el.attributes.length; i++) {
+            const attr = el.attributes[i];
+            if (attr.name.startsWith('data-') && 
+                (attr.name.includes('translation') || 
+                 attr.name.includes('original') || 
+                 attr.name.includes('immersive'))) {
+                el.removeAttribute(attr.name);
+            }
+        }
+    });
+}
+
+function restoreAfterScreenshot() {
+    if (window._screenshotState && window._screenshotState.modifiedElements) {
+        window._screenshotState.modifiedElements.forEach(item => {
+            item.element.style[item.property] = item.value;
+        });
     }
-    return (price / daysInPeriod) * days;
-}
-
-function displayResults(purchasePrice, tradePrice, remainingValue, premium, premiumPercent, remainingDays) {
-    document.getElementById("resultPurchasePriceCNY").textContent = purchasePrice.toFixed(2);
-    document.getElementById("resultTradePriceCNY").textContent = tradePrice.toFixed(2);
-    document.getElementById("resultRemainingValueCNY").textContent = remainingValue.toFixed(2);
-    document.getElementById("resultPremiumCNY").textContent = premium.toFixed(2);
-    document.getElementById("resultPremiumPercent").textContent = premiumPercent + "%";
-
-    const remainingMonths = Math.floor(remainingDays / 30);
-    const remainingDay = remainingDays % 30;
-    document.getElementById("resultRemainingDays").textContent = remainingDays;
-    document.getElementById("resultRemainingMonths").textContent = remainingMonths;
-    document.getElementById("resultRemainingDay").textContent = remainingDay;
-
-    let advice = getAdvice(premiumPercent);
-    document.getElementById("resultAdvice").textContent = advice;
-
-    document.querySelector(".result").style.display = "block";
-}
-
-function getAdvice(premiumPercent) {
-    if (premiumPercent >= 10 && premiumPercent < 30) {
-        return "卖家溢价少许，请三思而后行！";
-    } else if (premiumPercent >= 30 && premiumPercent < 100) {
-        return "存在高溢价，非刚需勿买！";
-    } else if (premiumPercent >= 100) {
-        return "此乃传家之宝乎？";                
-    } else if (premiumPercent <= -30 && premiumPercent > -50) {
-        return "卖家血亏，快买，错过拍断大腿！";
-    } else if (premiumPercent <= -10 && premiumPercent > -30) {
-        return "卖家小亏，买了或许不赚但绝对不亏！";
-    } else if (premiumPercent <= -50) {
-        return "极端折价，可能存在问题，需谨慎！";    
-    } else {
-        return "价格合理，良心卖家！";
-    }
+    window._screenshotState = null;
 }
