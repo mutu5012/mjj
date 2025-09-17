@@ -1,7 +1,4 @@
         document.addEventListener('DOMContentLoaded', function() {
-            if (!isMobileDevice()) {
-                showToast('如需获取分享链接，请关闭<code>沉浸式翻译</code>插件<br>否则会引起画面形变');
-            }
             fetchExchangeRates();
         });
 
