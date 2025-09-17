@@ -47,8 +47,7 @@
             const markdownLines = [
                 
                 '# 剩余价值计算结果',
-                dataDate ? `> 汇率数据日期：${dataDate}` : '',
-                '',  
+                dataDate ? `> 汇率数据日期：${dataDate}\n` : '', 
                 '',
                 '| 项目 | 数值 |',
                 '| --- | --- |',
