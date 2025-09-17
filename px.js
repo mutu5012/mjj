@@ -45,7 +45,7 @@
             const generatedAt = new Date().toLocaleString('zh-CN', { hour12: false });
 
             const markdownLines = [
-                '```markdown',
+                
                 '# 剩余价值计算结果',
                 dataDate ? `> 汇率数据日期：${dataDate}` : '',
                 '',
@@ -59,8 +59,8 @@
                 `| 溢价幅度 | ${premiumPercent} |`,
                 `| 购买建议 | ${advice || '暂无建议'} |`,
                 '',
-                `生成于：${generatedAt}`,
-                '```'
+                `生成于：${generatedAt}`
+                
             ].filter(Boolean);
 
             const markdownContent = markdownLines.join('\n');
