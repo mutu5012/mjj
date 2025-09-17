@@ -26,52 +26,72 @@
         }
 
         function takeScreenshot() {
-            const targetElement = document.querySelector('.container');
-            const uploadButton = document.querySelector('button[onclick="takeScreenshot()"]');
-            const loadingDiv = document.getElementById('loading');
+            const resultSection = document.querySelector('.result');
             const screenshotResult = document.getElementById('screenshotResult');
+            const loadingDiv = document.getElementById('loading');
+
+            if (!resultSection || resultSection.style.display === 'none') {
+                showToast('请先完成计算再分享');
+                return;
+            }
+
+            const dataDate = document.getElementById('dataDate').value || '';
+            const purchasePrice = document.getElementById('resultPurchasePriceCNY').textContent || '0.00';
+            const remainingValue = document.getElementById('resultRemainingValueCNY').textContent || '0.00';
+            const remainingDays = document.getElementById('resultRemainingDays').textContent || '0';
+            const remainingMonths = document.getElementById('resultRemainingMonths').textContent || '0';
+            const remainingDay = document.getElementById('resultRemainingDay').textContent || '0';
+            const tradePrice = document.getElementById('resultTradePriceCNY').textContent || '0.00';
+            const premium = document.getElementById('resultPremiumCNY').textContent || '0.00';
+            const premiumPercent = document.getElementById('resultPremiumPercent').textContent || '0%';
+            const advice = document.getElementById('resultAdvice').textContent || '暂无建议';
+            const generatedAt = new Date().toLocaleString('zh-CN', { hour12: false });
+
+            const markdownLines = [
+                '```markdown',
+                '# 剩余价值计算结果',
+                dataDate ? `> 汇率数据日期：${dataDate}` : '',
+                '',
+                '| 项目 | 数值 |',
+                '| --- | --- |',
+                `| 续费金额（CNY） | ￥${purchasePrice} |`,
+                `| 剩余价值（CNY） | ￥${remainingValue} |`,
+                `| 剩余天数 | ${remainingDays} 天 (${remainingMonths} 个月余 ${remainingDay} 天) |`,
+                `| 交易金额（CNY） | ￥${tradePrice} |`,
+                `| 溢价金额（CNY） | ￥${premium} |`,
+                `| 溢价幅度 | ${premiumPercent} |`,
+                `| 购买建议 | ${advice || '暂无建议'} |`,
+                '',
+                `生成于：${generatedAt}`,
+                '```'
+            ].filter(Boolean);
+
+            const markdownContent = markdownLines.join('\n');
 
             loadingDiv.style.display = 'none';
-            screenshotResult.style.display = 'none';
+            screenshotResult.style.display = 'block';
+            screenshotResult.innerHTML = `Markdown 分享内容：<pre><code class="language-markdown">${escapeHtml(markdownContent)}</code></pre>`;
 
-            html2canvas(targetElement).then(canvas => {
-                loadingDiv.style.display = 'block';
-                screenshotResult.style.display = 'block';
-
-                canvas.toBlob(blob => {
-                    const formData = new FormData();
-                    formData.append('file', blob, 'mjj.webp');
-
-                    fetch('https://skyimg.de/api/upload', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data && Array.isArray(data) && data[0].url) {
-                            const imageUrl = data[0].url;
-
-                            document.getElementById('screenshotResult').innerHTML =
-                                `图片分享链接：<a href="${imageUrl}" target="_blank">点击查看</a>`;
-
-                            navigator.clipboard.writeText(imageUrl).then(() => {
-                                showToast('图片分享链接已复制到剪切板');
-                            }, err => {
-                                showToast('复制到剪切板失败');
-                            });
-                        } else {
-                            document.getElementById('screenshotResult').textContent = '上传成功但未获取到 URL！';
-                        }
-                        loadingDiv.style.display = 'none';
-                        uploadButton.style.visibility = 'visible';
-                    })
-                    .catch(error => {
-                        document.getElementById('screenshotResult').textContent = '上传失败！';
-                        console.error('Error:', error);
-                        loadingDiv.style.display = 'none';
-                    });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(markdownContent).then(() => {
+                    showToast('Markdown 内容已复制到剪切板');
+                }).catch(() => {
+                    showToast('自动复制失败，请手动复制下方内容');
                 });
-            });
+            } else {
+                showToast('当前环境不支持自动复制，请手动复制下方内容');
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#39;"
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
 
         async function fetchExchangeRates() {
