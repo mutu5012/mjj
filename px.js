@@ -1,7 +1,4 @@
         document.addEventListener('DOMContentLoaded', function() {
-            if (!isMobileDevice()) {
-                showToast('如需获取分享链接，请关闭<code>沉浸式翻译</code>插件<br>否则会引起画面形变');
-            }
             fetchExchangeRates();
         });
 
@@ -48,9 +45,9 @@
             const generatedAt = new Date().toLocaleString('zh-CN', { hour12: false });
 
             const markdownLines = [
-                '```markdown',
+                
                 '# 剩余价值计算结果',
-                dataDate ? `> 汇率数据日期：${dataDate}` : '',
+                dataDate ? `> 汇率数据日期：${dataDate}\n` : '', 
                 '',
                 '| 项目 | 数值 |',
                 '| --- | --- |',
@@ -62,8 +59,8 @@
                 `| 溢价幅度 | ${premiumPercent} |`,
                 `| 购买建议 | ${advice || '暂无建议'} |`,
                 '',
-                `生成于：${generatedAt}`,
-                '```'
+                `生成于：${generatedAt}`
+                
             ].filter(Boolean);
 
             const markdownContent = markdownLines.join('\n');
