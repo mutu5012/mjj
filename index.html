@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="px.css">
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="container mt-4 mb-4">
         <h1 class="mb-4 logo-title">
             <a href="#" onclick="location.reload();">
                 剩余价值计算器
@@ -20,8 +20,10 @@
                 <label for="dataDate">汇率数据日期</label>
                 <input type="text" class="form-control" id="dataDate" name="dataDate" disabled>
             </div>
+
+            <!-- 货币类型：移动端同一行 -->
             <div class="form-row">
-                <div class="col">
+                <div class="form-group col-6 col-md-6">
                     <label for="purchaseCurrency">续费货币类型</label>
                     <select class="form-control" id="purchaseCurrency" name="purchaseCurrency">
                         <option value="CNY">人民币 (CNY)</option>
@@ -40,13 +42,7 @@
                         <option value="DOGE">狗狗币 (DOGE)</option>
                     </select>
                 </div>
-                <div class="col">
-                    <label for="exchangeRate">对人民币的汇率</label>
-                    <input type="number" class="form-control" id="exchangeRate" name="exchangeRate" step="0.0001" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="col">
+                <div class="form-group col-6 col-md-6">
                     <label for="tradeCurrency">交易货币类型</label>
                     <select class="form-control" id="tradeCurrency" name="tradeCurrency">
                         <option value="CNY">人民币 (CNY)</option>
@@ -65,31 +61,48 @@
                         <option value="DOGE">狗狗币 (DOGE)</option>
                     </select>
                 </div>
-                <div class="col">
+            </div>
+
+            <!-- 汇率：移动端同一行 -->
+            <div class="form-row">
+                <div class="form-group col-6 col-md-6">
+                    <label for="exchangeRate">对人民币的汇率</label>
+                    <input type="number" class="form-control" id="exchangeRate" name="exchangeRate" step="0.0001" min="0" inputmode="decimal" required>
+                </div>
+                <div class="form-group col-6 col-md-6">
                     <label for="tradeExchangeRate">对人民币的汇率</label>
-                    <input type="number" class="form-control" id="tradeExchangeRate" name="tradeExchangeRate" step="0.0001" required>
+                    <input type="number" class="form-control" id="tradeExchangeRate" name="tradeExchangeRate" step="0.0001" min="0" inputmode="decimal" required>
                 </div>
             </div>
+            <!-- 日期：移动端同一行 -->
             <div class="form-row">
-                <div class="form-group col">
+                <div class="form-group col-6 col-md-6">
                     <label for="currentDate">当前日期</label>
                     <input type="date" class="form-control" id="currentDate" name="currentDate" required>
                 </div>
-                <div class="form-group col">
-                    <label for="expiryDate">到期日期</label>
+                <div class="form-group col-6 col-md-6">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between expiry-header">
+                        <label for="expiryDate" class="mb-1">到期日期</label>
+                        <div class="btn-group btn-group-sm quick-expiry" role="group" aria-label="到期快捷选项">
+                            <button type="button" class="btn btn-outline-secondary" data-expiry="1m">1月</button>
+                            <button type="button" class="btn btn-outline-secondary" data-expiry="1q">1季</button>
+                            <button type="button" class="btn btn-outline-secondary" data-expiry="1y">1年</button>
+                        </div>
+                    </div>
                     <input type="date" class="form-control" id="expiryDate" name="expiryDate" required>
                 </div>  
             </div>          
             <div class="form-row">
-                <div class="form-group col">
+                <!-- 金额 + 周期：移动端同一行（三列） -->
+                <div class="form-group col-4 col-md-4">
                     <label for="purchasePrice">续费金额</label>
-                    <input type="number" class="form-control" id="purchasePrice" name="purchasePrice" step="0.01" required>
+                    <input type="number" class="form-control" id="purchasePrice" name="purchasePrice" step="0.01" min="0" inputmode="decimal" required>
                 </div>
-                <div class="form-group col">
+                <div class="form-group col-4 col-md-4">
                     <label for="tradePrice">交易金额</label>
-                    <input type="number" class="form-control" id="tradePrice" name="tradePrice" step="0.01" required>
+                    <input type="number" class="form-control" id="tradePrice" name="tradePrice" step="0.01" min="0" inputmode="decimal" required>
                 </div>
-                <div class="form-group col">
+                <div class="form-group col-4 col-md-4">
                     <label for="paymentFrequency">续费周期</label>
                     <select class="form-control" id="paymentFrequency" name="paymentFrequency" required>
                         <option value="yearly">年付</option>
@@ -104,22 +117,23 @@
             </div>
             <div class="form-row align-items-center">
                 <div class="col-auto">
-                    <button type="button" class="btn btn-primary mr-1" onclick="calculateRemainingValue()">计算剩余价值</button>
+                    <button type="button" class="btn btn-primary mr-1" id="btnCalculate" onclick="calculateRemainingValue()">计算剩余价值</button>
                 </div>
                 <div class="col-auto">
                     <button type="button" class="btn btn-primary" onclick="takeScreenshot()">分享计算结果</button>
                 </div>
             </div>
         </form>
-        <div class="result mt-4" style="display: none;">
+        <div class="result mt-4" style="display: none;" aria-live="polite">
             <h3 style="font-size: 1.5rem;">计算结果：</h3>    
+            <div id="resultMeta" class="small text-muted mb-2"></div>
             <div class="row">
-                <div class="col">
+                <div class="col-12 col-md-6">
                     <p>续费金额: ￥<span id="resultPurchasePriceCNY"></span></p>
                     <p>剩余价值: ￥<span id="resultRemainingValueCNY"></span></p>
                     <p>剩余天数: <span id="resultRemainingDays"></span>天 (<span id="resultRemainingMonths"></span>个月余<span id="resultRemainingDay"></span>天)</p>
                 </div>
-                <div class="col">
+                <div class="col-12 col-md-6">
                     <p>交易金额: ￥<span id="resultTradePriceCNY"></span></p>
                     <p>溢价金额: ￥<span id="resultPremiumCNY"></span></p>
                     <p>溢价幅度: <span id="resultPremiumPercent"></span></p>
